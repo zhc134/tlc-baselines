@@ -7,6 +7,9 @@ from math import atan2, pi
 import sys
 
 class World:
+    """
+    """
+
     def __init__(self, cityflow_config, thread_num):
         print("building world...")
         self.eng = cityflow.Engine(cityflow_config, thread_num=thread_num)
@@ -14,11 +17,7 @@ class World:
         self.RIGHT = True # vehicles moves on the right side, currently always set to true due to CityFlow's mechanism
 
         # get all non virtual intersections
-        self.intersections = []
-        for intersection in self.roadnet["intersections"]:
-            if not intersection["virtual"]:
-                self.intersections.append(intersection)
-
+        self.intersections = [i for i in self.roadnet["intersections"] if not i["virtual"]]
         self.intersection_ids = [i["id"] for i in self.intersections]
 
         # get incoming and outgoing roads of each intersection, clock-wise order from North
@@ -66,6 +65,16 @@ class World:
         print("road network parsed.")
         print("world built.")
 
+        # initializing info functions
+        self.info_functions = {
+            "lane_count": self.eng.get_lane_vehicle_count,
+            "lane_waiting_count": self.eng.get_lane_waiting_vehicle_count,
+            "lane_vehicles": self.eng.get_lane_vehicles,
+            "time": self.eng.get_current_time
+        }
+        self.fns = []
+        self.info = {}
+
     def _get_roadnet(self, cityflow_config):
         with open(cityflow_config) as f:
             cityflow_config = json.load(f)
@@ -73,6 +82,33 @@ class World:
         with open(roadnet_file) as f:
             roadnet = json.load(f)
         return roadnet
+
+    def subscribe(self, fns):
+        if isinstance(fns, str):
+            fns = [fns]
+        for fn in fns:
+            if fn in self.info_functions:
+                if not fn in self.fns:
+                    self.fns.append(fn)
+            else:
+                raise Exception("info function %s not exists" % fn)
+
+    def step(self):
+        self.eng.next_step()
+        self._update_infos()
+
+    def reset(self):
+        self.eng.reset()
+        self._update_infos()
+
+    def _update_infos(self):
+        self.info = {}
+        for fn in self.fns:
+            self.info[fn] = self.info_functions[fn]()
+
+    def get_info(self, info):
+        return self.info[info]
+
 
 if __name__ == "__main__":
     world = World("examples/config.json", thread_num=1)

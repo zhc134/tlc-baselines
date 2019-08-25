@@ -3,19 +3,28 @@ import numpy as np
 import cityflow
 
 class TSCEnv(gym.Env):
-    def __init__(self, world, ob_generator, reward_generator):
+    """
+    Environment for Traffic Signal Control task.
+
+    Parameters
+    ----------
+    world: World object
+    agents: list of agent, corresponding to each intersection in world.intersections
+    metric: Metric object, used to calculate evaluation metric
+    """
+    def __init__(self, world, agents, metric):
         self.world = world
-        self.ob_generator = ob_generator
-        self.reward_generator = reward_generator
         
         self.eng = self.world.eng
         self.n_agents = len(self.world.intersection_ids)
 
-        action_dims = []
-        for intersection in self.world.intersections:
-            action_dims.append(len(intersection["trafficLight"]["lightphases"]))
+        assert(len(agents) == self.n_agents)
+
+        self.agents = agents
+        action_dims = [agent.action_space.n for agent in agents]
         self.action_space = gym.spaces.MultiDiscrete(action_dims)
 
+        self.metric = metric
 
     def step(self, actions):
         assert len(actions) == self.n_agents
@@ -23,18 +32,18 @@ class TSCEnv(gym.Env):
         for i in range(self.n_agents):
             self.eng.set_tl_phase(self.world.intersection_ids[i], actions[i])
         
-        self.eng.next_step()
+        self.world.step()
 
-        obs = self.ob_generator.generate()
-        rewards = self.reward_generator.generate()
+        obs = [agent.get_ob() for agent in self.agents]
+        rewards = [agent.get_reward() for agent in self.agents]
         dones = [False] * self.n_agents
-        infos = {}
+        infos = {"metric": self.metric.update()}
 
         return obs, rewards, dones, infos
 
     def reset(self):
-        self.eng.reset()
-        obs = self.ob_callback.get_obs()
+        self.world.reset()
+        obs = [agent.get_ob() for agent in self.agents]
         return obs
 
 

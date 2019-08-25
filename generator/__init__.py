@@ -1,2 +1,2 @@
 from .base import BaseGenerator
-from .lane_vehicle import LaneVehicle
+from .lane_vehicle import LaneVehicleGenerator
