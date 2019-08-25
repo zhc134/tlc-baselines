@@ -27,3 +27,5 @@ for i in range(100):
     #print(obs)
     print(rewards)
     print(info["metric"])
+
+print("Final Travel Time is %.4f" % env.metric.update(done=True))

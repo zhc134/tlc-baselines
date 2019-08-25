@@ -8,8 +8,8 @@ import sys
 
 class World:
     """
+    Create a CityFlow engine and maintain informations about CityFlow world
     """
-
     def __init__(self, cityflow_config, thread_num):
         print("building world...")
         self.eng = cityflow.Engine(cityflow_config, thread_num=thread_num)
