@@ -67,6 +67,7 @@ class World:
 
         # initializing info functions
         self.info_functions = {
+            "vehicles": (lambda : self.eng.get_vehicles(include_waiting=True)),
             "lane_count": self.eng.get_lane_vehicle_count,
             "lane_waiting_count": self.eng.get_lane_waiting_vehicle_count,
             "lane_vehicles": self.eng.get_lane_vehicles,

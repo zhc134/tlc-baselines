@@ -9,7 +9,7 @@ import argparse
 # parse args
 parser = argparse.ArgumentParser(description='Run Example')
 parser.add_argument('config_file', type=str, help='path of config file')
-parser.add_argument('--thread', type=int, help='number of threads')
+parser.add_argument('--thread', type=int, default=1, help='number of threads')
 parser.add_argument('--steps', type=int, default=100, help='number of steps')
 args = parser.parse_args()
 

@@ -8,14 +8,13 @@ class TravelTimeMetric(BaseMetric):
     """
     def __init__(self, world):
         self.world = world
-        self.world.subscribe(["lane_vehicles", "time"])
+        self.world.subscribe(["vehicles", "time"])
         self.vehicle_enter_time = {}
         self.travel_times = []
 
     def update(self, done=False):
-        lane_vehicles = self.world.get_info("lane_vehicles")
+        vehicles = self.world.get_info("vehicles")
         current_time = self.world.get_info("time")
-        vehicles = sum(lane_vehicles.values(), [])
 
         for vehicle in vehicles:
             if not vehicle in self.vehicle_enter_time:
