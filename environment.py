@@ -17,8 +17,9 @@ class TSCEnv(gym.Env):
         
         self.eng = self.world.eng
         self.n_agents = len(self.world.intersection_ids)
+        self.n = self.n_agents
 
-        assert(len(agents) == self.n_agents)
+        assert len(agents) == self.n_agents
 
         self.agents = agents
         action_dims = [agent.action_space.n for agent in agents]
@@ -29,10 +30,7 @@ class TSCEnv(gym.Env):
     def step(self, actions):
         assert len(actions) == self.n_agents
 
-        for i in range(self.n_agents):
-            self.eng.set_tl_phase(self.world.intersection_ids[i], actions[i])
-        
-        self.world.step()
+        self.world.step(actions)
 
         obs = [agent.get_ob() for agent in self.agents]
         rewards = [agent.get_reward() for agent in self.agents]
@@ -45,6 +43,3 @@ class TSCEnv(gym.Env):
         self.world.reset()
         obs = [agent.get_ob() for agent in self.agents]
         return obs
-
-
-    

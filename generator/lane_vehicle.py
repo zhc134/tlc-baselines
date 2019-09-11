@@ -8,8 +8,8 @@ class LaneVehicleGenerator(BaseGenerator):
     Parameters
     ----------
     world : World object
-    iid : id of intersection
-    fns : list of statistics to get, currently support "count" and "waiting_count"
+    I : Intersection object
+    fns : list of statistics to get, currently support "lane_count", "lane_waiting_count" and "pressure"
     in_only : boolean, whether to compute incoming lanes only
     average : None or str
         None means no averaging
@@ -17,23 +17,31 @@ class LaneVehicleGenerator(BaseGenerator):
         "all" means take average of all lanes
     negative : boolean, whether return negative values (mostly for Reward)
     """
-    def __init__(self, world, iid, fns, in_only=False, average=None, negative=False):
+    def __init__(self, world, I, fns, in_only=False, average=None, negative=False):
         self.world = world
+        self.I = I
 
         # get lanes of intersections
         self.lanes = []
-        roads = self.world.intersection_roads[iid]
         if in_only:
-            roads = roads["in_roads"]
+            roads = I.in_roads
         else:
-            roads = roads["roads"]
+            roads = I.roads
         for road in roads:
-            from_zero = (road["startIntersection"] == iid) if self.world.RIGHT else (road["endIntersection"] == iid)
+            from_zero = (road["startIntersection"] == I.id) if self.world.RIGHT else (road["endIntersection"] == I.id)
             self.lanes.append([road["id"] + "_" + str(i) for i in range(len(road["lanes"]))[::(1 if from_zero else -1)]])
 
         # subscribe functions
         self.world.subscribe(fns)
         self.fns = fns
+
+        # calculate result dimensions
+        size = sum(len(x) for x in self.lanes)
+        if average == "road":
+            size = len(roads)
+        elif average == "all":
+            size = 1
+        self.ob_length = len(fns) * size
 
         self.average = average
         self.negative = negative
@@ -66,7 +74,7 @@ class LaneVehicleGenerator(BaseGenerator):
 if __name__ == "__main__":
     from world import World
     world = World("examples/config.json", thread_num=1)
-    laneVehicle = LaneVehicle(world, world.intersection_ids[0], ["count"], False, "road")
+    laneVehicle = LaneVehicleGenerator(world, world.intersections[0], ["count"], False, "road")
     for _ in range(100):
         world.step()
     print(laneVehicle.generate())

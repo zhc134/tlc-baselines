@@ -10,7 +10,9 @@ class RLAgent(BaseAgent):
         return self.ob_generator.generate()
 
     def get_reward(self):
-        return self.reward_generator.generate()
+        reward = self.reward_generator.generate()
+        assert len(reward) == 1
+        return reward[0]
 
     def get_action(self, ob):
         return self.action_space.sample()

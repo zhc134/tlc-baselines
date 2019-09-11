@@ -8,3 +8,6 @@ class BaseAgent(object):
 
     def get_reward(self):
         raise NotImplementedError()
+
+    def get_action(self, ob):
+        raise NotImplementedError()
