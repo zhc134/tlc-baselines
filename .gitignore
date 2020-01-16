@@ -4,3 +4,5 @@ examples/*
 *.DS_Store
 .idea/
 model/
+log/
+local/

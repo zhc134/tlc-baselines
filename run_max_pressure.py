@@ -21,7 +21,10 @@ world = World(args.config_file, thread_num=args.thread)
 agents = []
 for i in world.intersections:
     action_space = gym.spaces.Discrete(len(i.phases))
-    agents.append(MaxPressureAgent(action_space, i, world))
+    agents.append(MaxPressureAgent(
+        action_space, i, world, 
+        LaneVehicleGenerator(world, i, ["lane_count"], in_only=True)
+    ))
 
 # create metric
 metric = TravelTimeMetric(world)
@@ -37,9 +40,11 @@ for i in range(args.steps):
     for agent_id, agent in enumerate(agents):
         actions.append(agent.get_action(obs[agent_id]))
     obs, rewards, dones, info = env.step(actions)
-    print(world.intersections[0]._current_phase, end=",")
+    #print(world.intersections[0]._current_phase, end=",")
+    print(obs, actions)
+    print(env.eng.get_average_travel_time())
     #print(obs)
     #print(rewards)
     # print(info["metric"])
 
-print("Final Travel Time is %.4f" % env.metric.update(done=True))
+#print("Final Travel Time is %.4f" % env.metric.update(done=True))

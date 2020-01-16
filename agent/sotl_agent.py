@@ -12,7 +12,7 @@ class SOTLAgent(BaseAgent):
         self.world.subscribe("lane_waiting_count")
 
         # the minimum duration of time of one phase
-        self.t_min = 5
+        self.t_min = 10
 
         # some threshold to deal with phase requests
         self.min_green_vehicle = 20

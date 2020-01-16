@@ -4,7 +4,7 @@ import numpy as np
 from collections import deque
 from keras.models import Sequential
 from keras.layers import Dense
-from keras.optimizers import Adam
+from keras.optimizers import Adam, RMSprop, SGD
 import os
 
 class DQNAgent(RLAgent):
@@ -17,11 +17,11 @@ class DQNAgent(RLAgent):
 
         self.memory = deque(maxlen=2000)
         self.learning_start = 2000
-        self.update_model_freq = 10
-        self.update_target_model_freq = 100
+        self.update_model_freq = 1
+        self.update_target_model_freq = 20
 
         self.gamma = 0.95  # discount rate
-        self.epsilon = 1.0  # exploration rate
+        self.epsilon = 0.1  # exploration rate
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.995
         self.learning_rate = 0.005
@@ -38,15 +38,18 @@ class DQNAgent(RLAgent):
         act_values = self.model.predict(ob)
         return np.argmax(act_values[0])
 
+    def sample(self):
+        return self.action_space.sample()
+
     def _build_model(self):
         # Neural Net for Deep-Q learning Model
         model = Sequential()
-        model.add(Dense(40, input_dim=self.ob_length, activation='relu'))
-        model.add(Dense(40, activation='relu'))
+        model.add(Dense(20, input_dim=self.ob_length, activation='relu'))
+        #model.add(Dense(20, activation='relu'))
         model.add(Dense(self.action_space.n, activation='linear'))
         model.compile(
             loss='mse',
-            optimizer=Adam(lr=self.learning_rate)
+            optimizer=RMSprop()
         )
         return model
 
@@ -62,16 +65,13 @@ class DQNAgent(RLAgent):
 
     def replay(self):
         minibatch = random.sample(self.memory, self.batch_size)
-        for ob, action, reward, next_ob in minibatch:
-            # print(next_state)
-            ob = self._reshape_ob(ob)
-            next_ob = self._reshape_ob(next_ob)
-            target = (reward + self.gamma *
-                      np.amax(self.target_model.predict(next_ob)[0]))
-            target_f = self.model.predict(ob)
-            target_f[0][action] = target
-            history = self.model.fit(ob, target_f, epochs=1, verbose=0)
-        # print(history.history['loss'])
+        obs, actions, rewards, next_obs = [np.stack(x) for x in np.array(minibatch).T]
+        target = rewards + self.gamma * np.amax(self.target_model.predict(next_obs), axis=1)
+        target_f = self.model.predict(obs)
+        for i, action in enumerate(actions):
+            target_f[i][action] = target[i]
+        history = self.model.fit(obs, target_f, epochs=1, verbose=0)
+        #print(history.history['loss'])
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
 

@@ -35,7 +35,8 @@ class TSCEnv(gym.Env):
         obs = [agent.get_ob() for agent in self.agents]
         rewards = [agent.get_reward() for agent in self.agents]
         dones = [False] * self.n_agents
-        infos = {"metric": self.metric.update()}
+        #infos = {"metric": self.metric.update()}
+        infos = {}
 
         return obs, rewards, dones, infos
 

@@ -38,8 +38,9 @@ for i in range(args.steps):
         actions.append(agent.get_action(obs[agent_id]))
     obs, rewards, dones, info = env.step(actions)
     print(world.intersections[0]._current_phase, end=",")
+    print(env.eng.get_average_travel_time())
     #print(obs)
     #print(rewards)
     # print(info["metric"])
 
-print("Final Travel Time is %.4f" % env.metric.update(done=True))
+#print("Final Travel Time is %.4f" % env.metric.update(done=True))

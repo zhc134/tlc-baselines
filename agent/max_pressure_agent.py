@@ -4,17 +4,21 @@ class MaxPressureAgent(BaseAgent):
     """
     Agent using Max-Pressure method to control traffic light
     """
-    def __init__(self, action_space, I, world):
+    def __init__(self, action_space, I, world, ob_generator=None):
         super().__init__(action_space)
         self.I = I
         self.world = world
-        world.subscribe("lane_count")
+        self.world.subscribe("lane_count")
+        self.ob_generator = ob_generator
         
         # the minimum duration of time of one phase
-        self.t_min = 5
+        self.t_min = 20
 
     def get_ob(self):
-        return None
+        if self.ob_generator is not None:
+            return self.ob_generator.generate() 
+        else:
+            return None
 
     def get_action(self, ob):
         # get lane pressure

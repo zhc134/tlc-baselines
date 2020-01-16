@@ -71,11 +71,7 @@ class Intersection(object):
             phase_available_startlanes = list(set(phase_available_startlanes))
             self.phase_available_startlanes.append(phase_available_startlanes)
 
-        # record phase info
-        self.current_phase = 0 # phase id in self.phases (excluding yellow)
-        self._current_phase = self.phases[0] # true phase id (including yellow)
-        self.current_phase_time = 0
-        self.action_before_yellow = None
+        self.reset()
 
 
     def insert_road(self, road, out):
@@ -116,6 +112,15 @@ class Intersection(object):
                 else:
                     self._change_phase(action, interval)
                     self.current_phase = action
+
+    def reset(self):
+        # record phase info
+        self.current_phase = 0 # phase id in self.phases (excluding yellow)
+        self._current_phase = self.phases[0] # true phase id (including yellow)
+        self.eng.set_tl_phase(self.id, self._current_phase)
+        self.current_phase_time = 0
+        self.action_before_yellow = None
+
 
 
 class World(object):
@@ -204,6 +209,8 @@ class World(object):
 
     def reset(self):
         self.eng.reset()
+        for I in self.intersections:
+            I.reset()
         self._update_infos()
 
     def _update_infos(self):
