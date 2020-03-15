@@ -6,6 +6,7 @@ import numpy as np
 from math import atan2, pi
 import sys
 
+
 def _get_direction(road, out=True):
     if out:
         x = road["points"][1]["x"] - road["points"][0]["x"]
@@ -14,13 +15,14 @@ def _get_direction(road, out=True):
         x = road["points"][-2]["x"] - road["points"][-1]["x"]
         y = road["points"][-2]["y"] - road["points"][-1]["y"]
     tmp = atan2(x, y)
-    return tmp if tmp >= 0 else (tmp + 2*pi)
+    return tmp if tmp >= 0 else (tmp + 2 * pi)
+
 
 class Intersection(object):
     def __init__(self, intersection, world):
         self.id = intersection["id"]
         self.eng = world.eng
-        
+
         # incoming and outgoing roads of each intersection, clock-wise order from North
         self.roads = []
         self.outs = []
@@ -73,14 +75,14 @@ class Intersection(object):
 
         self.reset()
 
-
     def insert_road(self, road, out):
         self.roads.append(road)
         self.outs.append(out)
         self.directions.append(_get_direction(road, out))
 
     def sort_roads(self, RIGHT):
-        order = sorted(range(len(self.roads)), key=lambda i: (self.directions[i], self.outs[i] if RIGHT else not self.outs[i]))
+        order = sorted(range(len(self.roads)),
+                       key=lambda i: (self.directions[i], self.outs[i] if RIGHT else not self.outs[i]))
         self.roads = [self.roads[i] for i in order]
         self.directions = [self.directions[i] for i in order]
         self.outs = [self.outs[i] for i in order]
@@ -115,25 +117,25 @@ class Intersection(object):
 
     def reset(self):
         # record phase info
-        self.current_phase = 0 # phase id in self.phases (excluding yellow)
-        self._current_phase = self.phases[0] # true phase id (including yellow)
+        self.current_phase = 0  # phase id in self.phases (excluding yellow)
+        self._current_phase = self.phases[0]  # true phase id (including yellow)
         self.eng.set_tl_phase(self.id, self._current_phase)
         self.current_phase_time = 0
         self.action_before_yellow = None
-
 
 
 class World(object):
     """
     Create a CityFlow engine and maintain informations about CityFlow world
     """
+
     def __init__(self, cityflow_config, thread_num):
         print("building world...")
         self.eng = cityflow.Engine(cityflow_config, thread_num=thread_num)
         with open(cityflow_config) as f:
             cityflow_config = json.load(f)
         self.roadnet = self._get_roadnet(cityflow_config)
-        self.RIGHT = True # vehicles moves on the right side, currently always set to true due to CityFlow's mechanism
+        self.RIGHT = True  # vehicles moves on the right side, currently always set to true due to CityFlow's mechanism
         self.interval = cityflow_config["interval"]
 
         # get all non virtual intersections
@@ -173,19 +175,48 @@ class World(object):
 
         # initializing info functions
         self.info_functions = {
-            "vehicles": (lambda : self.eng.get_vehicles(include_waiting=True)),
+            "vehicles": (lambda: self.eng.get_vehicles(include_waiting=True)),
             "lane_count": self.eng.get_lane_vehicle_count,
             "lane_waiting_count": self.eng.get_lane_waiting_vehicle_count,
             "lane_vehicles": self.eng.get_lane_vehicles,
-            "time": self.eng.get_current_time
+            "time": self.eng.get_current_time,
+            "pressure": self.get_pressure
         }
         self.fns = []
         self.info = {}
 
         print("world built.")
 
+    def get_pressure(self):
+        vehicles = self.eng.get_lane_vehicle_count()
+        pressures = {}
+        for i in self.intersections:
+            pressure = 0
+            in_lanes = []
+            for road in i.in_roads:
+                from_zero = (road["startIntersection"] == i.id) if self.RIGHT else (
+                        road["endIntersection"] == i.id)
+                for n in range(len(road["lanes"]))[::(1 if from_zero else -1)]:
+                    in_lanes.append(road["id"] + "_" + str(n))
+            out_lanes = []
+            for road in i.out_roads:
+                from_zero = (road["endIntersection"] == i.id) if self.RIGHT else (
+                        road["startIntersection"] == i.id)
+                for n in range(len(road["lanes"]))[::(1 if from_zero else -1)]:
+                    out_lanes.append(road["id"] + "_" + str(n))
+            for lane in vehicles.keys():
+                if lane in in_lanes:
+                    pressure += vehicles[lane]
+                if lane in out_lanes:
+                    pressure -= vehicles[lane]
+            pressures[i.id] = pressure
+        return pressures
+
+    # return [self.dic_lane_waiting_vehicle_count_current_step[lane] for lane in self.list_entering_lanes] + \
+    # [-self.dic_lane_waiting_vehicle_count_current_step[lane] for lane in self.list_exiting_lanes]
+
     def _get_roadnet(self, cityflow_config):
-        roadnet_file= osp.join(cityflow_config["dir"], cityflow_config["roadnetFile"])
+        roadnet_file = osp.join(cityflow_config["dir"], cityflow_config["roadnetFile"])
         with open(roadnet_file) as f:
             roadnet = json.load(f)
         return roadnet
@@ -224,5 +255,5 @@ class World(object):
 
 if __name__ == "__main__":
     world = World("examples/config.json", thread_num=1)
-    #print(len(world.intersections[0].startlanes))
+    # print(len(world.intersections[0].startlanes))
     print(world.intersections[0].phase_available_startlanes)
