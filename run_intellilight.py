@@ -20,6 +20,11 @@ random.seed(SEED)
 np.random.seed(SEED)
 set_random_seed((SEED))
 
+"""
+currently only support training on single agent since its designed as a single intersection algorithm.
+you may test it in the multi-agent with parameter-sharing.
+"""
+
 def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('config_file', type=str, help='path of config file')
@@ -225,8 +230,6 @@ def test(env, args, model_name):
     trv_time = env.eng.get_average_travel_time()
     print("Final Travel Time is %.4f" % trv_time)
     return trv_time
-
-
 
 if __name__ == "__main__":
     player = TrafficLightDQN(agents, env)
