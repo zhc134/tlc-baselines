@@ -133,7 +133,6 @@ class TrafficLightDQN:
                 ob = obs[0]
                 last_action = 0
                 current_time = 0
-            print(pre_train_count_per_ratio)
             if if_pretrain:
                 if current_time > pre_train_count_per_ratio:
                     print("Terminal occured. Episode end.")
@@ -168,6 +167,7 @@ class TrafficLightDQN:
 
             reward = rewards[0]
             next_ob = next_obs[0]
+            current_time = self.env.eng.get_current_time()
 
 
             # remember
@@ -183,11 +183,10 @@ class TrafficLightDQN:
             print(memory_str)
             f_memory.write(memory_str + "\n")
             f_memory.close()
-            current_time = self.env.eng.get_current_time()  # in seconds
 
             if not if_pretrain:
                 # update network
-                self.agent.update_network(if_pretrain, use_average, current_time)
+                self.agent.update_network(if_pretrain, use_average, total_steps)
                 self.agent.update_network_bar()
 
             last_action = action
@@ -196,16 +195,7 @@ class TrafficLightDQN:
 
         if if_pretrain:
             self.agent.set_update_outdated()
-            self.agent.update_network(if_pretrain, use_average, current_time)
-            self.agent.update_network_bar()
-        self.agent.reset_update_count()
-        print("END")
-
-
-
-        if if_pretrain:
-            self.agent.set_update_outdated()
-            self.agent.update_network(if_pretrain, use_average, current_time)
+            self.agent.update_network(if_pretrain, use_average, total_steps)
             self.agent.update_network_bar()
         self.agent.reset_update_count()
         print("END")
@@ -243,4 +233,5 @@ if __name__ == "__main__":
     player.train(if_pretrain=True, use_average=True)
     player.train(if_pretrain=False, use_average=False)
 
+    # test(env, args, "602.0")
     # test(env, args, "init_model")

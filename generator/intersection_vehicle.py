@@ -152,7 +152,7 @@ class IntersectionVehicleGenerator():
         # TODO get the length and width from RoadNet file
         area_length = 600
         area_width = 600
-        grid_width = 20 # hyper parameter, decides the density of the grid
+        grid_width = 4 # hyper parameter, decides the density of the grid
 
         length_num_grids = int(area_length / grid_width)
         mapOfCars = np.zeros((length_num_grids, length_num_grids))

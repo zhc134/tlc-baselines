@@ -47,7 +47,7 @@ paras = {"LEARNING_RATE": 0.001,
                     },
 "LIST_STATE_FEATURE": ["queue_length", "num_of_vehicles", "waiting_time", "map_feature", "cur_phase", "next_phase"],
 "REWARD_WEIGHTS": [-0.25, -0.25, -0.25, -5, 1, 1],
-"REWARD_COMPONENTS": ["queue_length", "queue_length", "waiting_time", "c", "passed_count", "passed_time_count"]
+"REWARD_COMPONENTS": ["queue_length", "delay", "waiting_time", "c", "passed_count"]#, "passed_time_count"]
 }
 
 class IntelliLightAgent(RLAgent):
@@ -112,7 +112,7 @@ class IntelliLightAgent(RLAgent):
             queue_length=np.reshape(np.array(lane_queue), newshape=(1, 8)),
             num_of_vehicles=np.reshape(np.array(lane_num_vehicles), newshape=(1, 8)),
             waiting_time=np.reshape(np.array(lane_waiting_time), newshape=(1, 8)),
-            map_feature=np.reshape(np.array(map_of_vehicles), newshape=(1, 30, 30, 1)),
+            map_feature=np.reshape(np.array(map_of_vehicles), newshape=(1, 150, 150, 1)),
             cur_phase=np.reshape(np.array([cur_phase]), newshape=(1, 1)),
             next_phase=np.reshape(np.array([next_phase]),
                                   newshape=(1, 1)),
@@ -578,7 +578,7 @@ class State(object):
     D_QUEUE_LENGTH = (8,)
     D_NUM_OF_VEHICLES = (8,)
     D_WAITING_TIME = (8,)
-    D_MAP_FEATURE = (30,30,1,)
+    D_MAP_FEATURE = (150,150,1,)
     D_CUR_PHASE = (1,)
     D_NEXT_PHASE = (1,)
     D_TIME_THIS_PHASE = (1,)
