@@ -180,10 +180,19 @@ class World(object):
             "lane_waiting_count": self.eng.get_lane_waiting_vehicle_count,
             "lane_vehicles": self.eng.get_lane_vehicles,
             "time": self.eng.get_current_time,
-            "pressure": self.get_pressure
+            "vehicle_distance": self.eng.get_vehicle_distance,
+            "pressure": self.get_pressure,
+            "lane_waiting_time_count": self.get_lane_waiting_time_count,
+            "lane_delay": self.get_lane_delay,
+            "vehicle_trajectory": self.get_vehicle_trajectory,
+            "history_vehicles": self.get_history_vehicles
         }
         self.fns = []
         self.info = {}
+
+        self.vehicle_waiting_time = {} # key: vehicle_id, value: the waiting time of this vehicle since last halt.
+        self.vehicle_trajectory = {} # key: vehicle_id, value: [[lane_id_1, enter_time, time_spent_on_lane_1], ... , [lane_id_n, enter_time, time_spent_on_lane_n]]
+        self.history_vehicles = set()
 
         print("world built.")
 
@@ -214,6 +223,83 @@ class World(object):
 
     # return [self.dic_lane_waiting_vehicle_count_current_step[lane] for lane in self.list_entering_lanes] + \
     # [-self.dic_lane_waiting_vehicle_count_current_step[lane] for lane in self.list_exiting_lanes]
+
+    def get_vehicle_lane(self):
+        # get the current lane of each vehicle. {vehicle_id: lane_id}
+        vehicle_lane = {}
+        lane_vehicles = self.eng.get_lane_vehicles()
+        for lane in self.all_lanes:
+            for vehicle in lane_vehicles[lane]:
+                vehicle_lane[vehicle] = lane
+        return vehicle_lane
+
+    def get_vehicle_waiting_time(self):
+        # the waiting time of vehicle since last halt.
+        vehicles = self.eng.get_vehicles(include_waiting=False)
+        vehicle_speed = self.eng.get_vehicle_speed()
+        for vehicle in vehicles:
+            if vehicle not in self.vehicle_waiting_time.keys():
+                self.vehicle_waiting_time[vehicle] = 0
+            if vehicle_speed[vehicle] < 0.1:
+                self.vehicle_waiting_time[vehicle] += 1
+            else:
+                self.vehicle_waiting_time[vehicle] = 0
+        return self.vehicle_waiting_time
+
+    def get_lane_waiting_time_count(self):
+        # the sum of waiting times of vehicles on the lane since their last halt.
+        lane_waiting_time = {}
+        lane_vehicles = self.eng.get_lane_vehicles()
+        vehicle_waiting_time = self.get_vehicle_waiting_time()
+        for lane in self.all_lanes:
+            lane_waiting_time[lane] = 0
+            for vehicle in lane_vehicles[lane]:
+                lane_waiting_time[lane] += vehicle_waiting_time[vehicle]
+        return lane_waiting_time
+
+    def get_lane_delay(self):
+        # the delay of each lane: 1 - lane_avg_speed/speed_limit
+        # set speed limit to 11.11 by default
+        speed_limit = 11.11
+        lane_vehicles = self.eng.get_lane_vehicles()
+        lane_delay = {}
+        lanes = self.all_lanes
+        vehicle_speed = self.eng.get_vehicle_speed()
+
+        for lane in lanes:
+            vehicles = lane_vehicles[lane]
+            lane_vehicle_count = len(vehicles)
+            lane_avg_speed = 0.0
+            for vehicle in vehicles:
+                speed = vehicle_speed[vehicle]
+                lane_avg_speed += speed
+            if lane_vehicle_count == 0:
+                lane_avg_speed = speed_limit
+            else:
+                lane_avg_speed /= lane_vehicle_count
+            lane_delay[lane] = 1 - lane_avg_speed / speed_limit
+        return lane_delay
+
+    def get_vehicle_trajectory(self):
+        # lane_id and time spent on the corresponding lane that each vehicle went through
+        vehicle_lane = self.get_vehicle_lane()
+        vehicles = self.eng.get_vehicles(include_waiting=False)
+        for vehicle in vehicles:
+            if vehicle not in self.vehicle_trajectory:
+                self.vehicle_trajectory[vehicle] = [[vehicle_lane[vehicle], int(self.eng.get_current_time()), 0]]
+            else:
+                if vehicle not in vehicle_lane.keys():
+                    continue
+                if vehicle_lane[vehicle] == self.vehicle_trajectory[vehicle][-1][0]:
+                    self.vehicle_trajectory[vehicle][-1][2] += 1
+                else:
+                    self.vehicle_trajectory[vehicle].append([vehicle_lane[vehicle], int(self.eng.get_current_time()), 0])
+        return self.vehicle_trajectory
+
+    def get_history_vehicles(self):
+        self.history_vehicles.update(self.eng.get_vehicles())
+        return self.history_vehicles
+
 
     def _get_roadnet(self, cityflow_config):
         roadnet_file = osp.join(cityflow_config["dir"], cityflow_config["roadnetFile"])

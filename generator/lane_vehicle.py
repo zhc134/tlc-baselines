@@ -9,7 +9,7 @@ class LaneVehicleGenerator(BaseGenerator):
     ----------
     world : World object
     I : Intersection object
-    fns : list of statistics to get, currently support "lane_count", "lane_waiting_count" and "pressure"
+    fns : list of statistics to get, currently support "lane_count", "lane_waiting_count" , "lane_waiting_time_count", "lane_delay" and "pressure"
     in_only : boolean, whether to compute incoming lanes only
     average : None or str
         None means no averaging
