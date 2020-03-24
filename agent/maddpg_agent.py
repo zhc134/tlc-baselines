@@ -1,14 +1,9 @@
 from . import RLAgent
 import random
 import numpy as np
-from collections import deque
-from keras.models import Sequential
-from keras.layers import Dense
-from keras.optimizers import Adam
 import tensorflow as tf
 from . import maddpg_agent_util as U
 import tensorflow.contrib.layers as layers
-import gym
 
 def make_update_exp(vals, target_vals):
     polyak = 1.0 - 1e-2
@@ -159,12 +154,15 @@ class MADDPGAgent(RLAgent):
             num_units=self.args.num_units
         )
         # Create experience buffer
-        self.replay_buffer = U.ReplayBuffer(1e6)
+        self.replay_buffer = U.ReplayBuffer(1e4)
         self.max_replay_buffer_len = self.args.batch_size * 25
         self.replay_sample_index = None
 
     def get_ob(self):
         return self.ob_generator.generate()
+
+    def sample(self):
+        return self.action_space.sample()
 
     def get_reward(self):
         reward = self.reward_generator.generate()[0]
@@ -172,10 +170,13 @@ class MADDPGAgent(RLAgent):
         self.last_action = self.action
         return reward
 
-    def get_action(self, ob):
+    def get_action(self, ob, exploration=False):
         action_prob = self.get_action_prob(ob)
         self.action = np.argmax(action_prob)
+        if exploration:
+            self.action = np.argmax(action_prob) if random.random() > self.args.epsilon else self.sample()
         return self.action
+
 
     def get_action_prob(self, ob):
         return self.act(ob[None])[0]
@@ -193,7 +194,7 @@ class MADDPGAgent(RLAgent):
     def update(self, agents, t):
         if len(self.replay_buffer) < self.max_replay_buffer_len: # replay buffer is not large enough
             return
-        if not t % 100 == 0:  # only update every 100 steps
+        if not t % 30 == 0:  # only update every 100 steps
             return
 
         self.replay_sample_index = self.replay_buffer.make_index(self.args.batch_size)
